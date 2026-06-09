@@ -14,7 +14,8 @@ export const auth = betterAuth({
   advanced: {
     pathRules: {
         "signup": "/sign-up/email",
-        "signin": "/sign-in/email"
+        "signin": "/sign-in/email",
+        "signout": "/sign-out"
     }
   },
 
