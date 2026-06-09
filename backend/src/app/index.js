@@ -18,6 +18,8 @@ export function createApplication() {
     })
     );
 
+    const betterAuthHandler = toNodeHandler(auth);
+    
     app.all(/^\/api\/auth(?:\/.*)?$/, (req, res) => betterAuthHandler(req, res));
 
     app.get("/health", (req, res) => {

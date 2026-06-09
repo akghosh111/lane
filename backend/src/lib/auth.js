@@ -10,6 +10,15 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
+
+  advanced: {
+    pathRules: {
+        "signup": "/sign-up/email",
+        "signin": "/sign-in/email"
+    }
+  },
+
+  trustedOrigins: ["http://localhost:5173", "http://localhost:3000"],
 //   socialProviders: {
 //     github: {
 //       clientId: process.env.GITHUB_CLIENT_ID,
