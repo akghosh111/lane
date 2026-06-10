@@ -3,6 +3,7 @@ import express from "express";
 import { auth } from "../lib/auth.js";
 import { toNodeHandler, fromNodeHeaders } from "better-auth/node";
 import { workspaceRouter } from "./modules/workspace/routes.js";
+import { boardRouter } from "./modules/board/routes.js";
 
 
 export function createApplication() {
@@ -35,6 +36,7 @@ export function createApplication() {
     });
 
     app.use("/api/workspaces", workspaceRouter);
+    app.use("/api/boards", boardRouter);
 
 
     return app;
