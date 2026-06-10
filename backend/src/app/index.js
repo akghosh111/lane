@@ -2,6 +2,7 @@ import cors from "cors";
 import express from "express";
 import { auth } from "../lib/auth.js";
 import { toNodeHandler, fromNodeHeaders } from "better-auth/node";
+import { workspaceRouter } from "./modules/workspace/routes.js";
 
 
 export function createApplication() {
@@ -32,6 +33,8 @@ export function createApplication() {
         });
         return res.json(session);
     });
+
+    app.use("/api/workspaces", workspaceRouter);
 
 
     return app;
