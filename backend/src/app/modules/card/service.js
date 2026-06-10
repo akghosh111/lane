@@ -52,7 +52,7 @@ export const cardService = {
       throw new Error("UNAUTHORIZED_LIST_ACCESS");
     }
 
-    // Get max position in list
+    
     const [maxPos] = await db
       .select({ count: sql`count(*)` })
       .from(card)
@@ -133,5 +133,94 @@ export const cardService = {
 
   async archiveCard(cardId, userId) {
     return this.updateCard(cardId, userId, { archived: true });
+  },
+
+  async moveCard(userId, { cardId, sourceListId, destinationListId, position }) {
+    // 1. Verify access to both lists (or board they belong to)
+    const sourceAccess = await this.verifyListAccess(sourceListId, userId);
+    const destAccess = await this.verifyListAccess(destinationListId, userId);
+
+    if (!sourceAccess || !destAccess) {
+      throw new Error("UNAUTHORIZED_LIST_ACCESS");
+    }
+
+    return await db.transaction(async (tx) => {
+      // 2. Fetch the card to be moved
+      const [targetCard] = await tx
+        .select()
+        .from(card)
+        .where(and(eq(card.id, cardId), eq(card.listId, sourceListId)));
+
+      if (!targetCard) throw new Error("CARD_NOT_FOUND");
+
+      const oldPosition = targetCard.position;
+
+      if (sourceListId === destinationListId) {
+        // --- Same List Move ---
+        if (oldPosition === position) return targetCard;
+
+        if (oldPosition < position) {
+          // Move down: shift cards between old and new position up
+          await tx
+            .update(card)
+            .set({ position: sql`${card.position} - 1` })
+            .where(
+              and(
+                eq(card.listId, sourceListId),
+                sql`${card.position} > ${oldPosition}`,
+                sql`${card.position} <= ${position}`
+              )
+            );
+        } else {
+          // Move up: shift cards between new and old position down
+          await tx
+            .update(card)
+            .set({ position: sql`${card.position} + 1` })
+            .where(
+              and(
+                eq(card.listId, sourceListId),
+                sql`${card.position} < ${oldPosition}`,
+                sql`${card.position} >= ${position}`
+              )
+            );
+        }
+      } else {
+        // --- Cross List Move ---
+        // A. Shift cards in SOURCE list down (fill the gap)
+        await tx
+          .update(card)
+          .set({ position: sql`${card.position} - 1` })
+          .where(
+            and(
+              eq(card.listId, sourceListId),
+              sql`${card.position} > ${oldPosition}`
+            )
+          );
+
+        // B. Shift cards in DESTINATION list up (make room)
+        await tx
+          .update(card)
+          .set({ position: sql`${card.position} + 1` })
+          .where(
+            and(
+              eq(card.listId, destinationListId),
+              sql`${card.position} >= ${position}`
+            )
+          );
+      }
+
+      // 3. Finalize the move
+      const [updatedCard] = await tx
+        .update(card)
+        .set({
+          listId: destinationListId,
+          position: position,
+          updatedAt: new Date(),
+        })
+        .where(eq(card.id, cardId))
+        .returning();
+
+      return updatedCard;
+    });
   }
 };

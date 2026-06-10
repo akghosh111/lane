@@ -108,4 +108,30 @@ export const cardController = {
       return res.status(500).json({ error: "Failed to archive card" });
     }
   },
+
+  async move(req, res) {
+    try {
+      const userId = req.user.id;
+      const validated = moveCardSchema.safeParse(req.body);
+
+      if (!validated.success) {
+        return res.status(400).json({ 
+          error: "Validation failed", 
+          details: validated.error.format() 
+        });
+      }
+
+      const movedCard = await cardService.moveCard(userId, validated.data);
+      return res.json(movedCard);
+    } catch (error) {
+      if (error.message === "UNAUTHORIZED_LIST_ACCESS") {
+        return res.status(403).json({ error: "Unauthorized access to lists" });
+      }
+      if (error.message === "CARD_NOT_FOUND") {
+        return res.status(404).json({ error: "Card not found in the specified source list" });
+      }
+      console.error("Move card error:", error);
+      return res.status(500).json({ error: "Failed to move card" });
+    }
+  },
 };

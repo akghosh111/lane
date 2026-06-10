@@ -7,6 +7,7 @@ const router = Router();
 router.use(isAuthenticated);
 
 router.post("/", cardController.create);
+router.patch("/move", cardController.move);
 router.patch("/:id", cardController.update);
 router.delete("/:id", cardController.remove);
 router.patch("/:id/archive", cardController.archive);
